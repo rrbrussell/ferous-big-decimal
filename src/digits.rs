@@ -33,7 +33,7 @@ impl Digits {
 
     /// Divides self by rhs with any remainder returned as an [Option].
     ///
-    /// MathErrors::DivisionByZero is returned if self or rhs are 0.
+    /// [MathErrors::DivisionByZero] is returned if self or rhs are 0.
     const fn divide(self: Self, rhs: Digits) -> Result<(Digits, Option<Digits>), MathErrors> {
         return DIVISION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
@@ -51,6 +51,39 @@ impl Digits {
             Digits::Eight => return 8,
             Digits::Nine => return 9,
         }
+    }
+}
+
+impl From<u128> for Digits {
+    fn from(input: u128) -> Self {
+        if input == 0 {
+            return Digits::Zero;
+        }
+        if input == 1 {
+            return Digits::One;
+        }
+        if input == 2 {
+            return Digits::Two;
+        }
+        if input == 3 {
+            return Digits::Three;
+        }
+        if input == 4 {
+            return Digits::Four;
+        }
+        if input == 5 {
+            return Digits::Five;
+        }
+        if input == 6 {
+            return Digits::Six;
+        }
+        if input == 7 {
+            return Digits::Seven;
+        }
+        if input == 8 {
+            return Digits::Eight;
+        }
+        return Digits::Nine;
     }
 }
 
