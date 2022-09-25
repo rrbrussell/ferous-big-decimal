@@ -2,6 +2,11 @@
 #![allow(dead_code)]
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+enum MathErrors {
+    DivisionByZero,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Digits {
     Zero,
     One,
@@ -29,6 +34,13 @@ impl Digits {
     /// Multiplies self by rhs with any carry over amount returned as an [Option].
     const fn multiply(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
         return MULTIPLICATION_MATRIX[self.to_usize()][rhs.to_usize()];
+    }
+
+    /// Divides self by rhs with any remainder returned as an [Option].
+    ///
+    /// MathErrors::DivisionByZero is returned if self or rhs are 0.
+    const fn divide(self: Self, rhs: Digits) -> Result<(Digits, Option<Digits>), MathErrors> {
+        return DIVISION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
     const fn to_usize(self: Self) -> usize {
@@ -413,6 +425,129 @@ const MULTIPLICATION_MATRIX: [[(Digits, Option<Digits>); 10]; 10] = [
         (Digits::Three, Some(Digits::Six)),
         (Digits::Two, Some(Digits::Seven)),
         (Digits::One, Some(Digits::Eight)),
+    ],
+];
+
+const DIVISION_MATRIX: [[Result<(Digits, Option<Digits>), MathErrors>; 10]; 10] = [
+    [
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+        Err(MathErrors::DivisionByZero),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::One, None)),
+        Ok((Digits::Zero, Some(Digits::One))),
+        Ok((Digits::Zero, Some(Digits::One))),
+        Ok((Digits::Zero, Some(Digits::One))),
+        Ok((Digits::Zero, Some(Digits::One))),
+        Ok((Digits::Zero, Some(Digits::One))),
+        Ok((Digits::Zero, Some(Digits::One))),
+        Ok((Digits::Zero, Some(Digits::One))),
+        Ok((Digits::Zero, Some(Digits::One))),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::Two, None)),
+        Ok((Digits::One, None)),
+        Ok((Digits::Zero, Some(Digits::Two))),
+        Ok((Digits::Zero, Some(Digits::Two))),
+        Ok((Digits::Zero, Some(Digits::Two))),
+        Ok((Digits::Zero, Some(Digits::Two))),
+        Ok((Digits::Zero, Some(Digits::Two))),
+        Ok((Digits::Zero, Some(Digits::Two))),
+        Ok((Digits::Zero, Some(Digits::Two))),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::Three, None)),
+        Ok((Digits::One, Some(Digits::One))),
+        Ok((Digits::One, None)),
+        Ok((Digits::Zero, Some(Digits::Three))),
+        Ok((Digits::Zero, Some(Digits::Three))),
+        Ok((Digits::Zero, Some(Digits::Three))),
+        Ok((Digits::Zero, Some(Digits::Three))),
+        Ok((Digits::Zero, Some(Digits::Three))),
+        Ok((Digits::Zero, Some(Digits::Three))),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::Four, None)),
+        Ok((Digits::Two, None)),
+        Ok((Digits::One, Some(Digits::One))),
+        Ok((Digits::One, None)),
+        Ok((Digits::Zero, Some(Digits::Four))),
+        Ok((Digits::Zero, Some(Digits::Four))),
+        Ok((Digits::Zero, Some(Digits::Four))),
+        Ok((Digits::Zero, Some(Digits::Four))),
+        Ok((Digits::Zero, Some(Digits::Four))),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::Five, None)),
+        Ok((Digits::Two, Some(Digits::One))),
+        Ok((Digits::One, Some(Digits::Two))),
+        Ok((Digits::One, Some(Digits::One))),
+        Ok((Digits::One, None)),
+        Ok((Digits::Zero, Some(Digits::Five))),
+        Ok((Digits::Zero, Some(Digits::Five))),
+        Ok((Digits::Zero, Some(Digits::Five))),
+        Ok((Digits::Zero, Some(Digits::Five))),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::Six, None)),
+        Ok((Digits::Three, None)),
+        Ok((Digits::Two, None)),
+        Ok((Digits::One, Some(Digits::Two))),
+        Ok((Digits::One, Some(Digits::One))),
+        Ok((Digits::One, None)),
+        Ok((Digits::Zero, Some(Digits::Six))),
+        Ok((Digits::Zero, Some(Digits::Six))),
+        Ok((Digits::Zero, Some(Digits::Six))),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::Seven, None)),
+        Ok((Digits::Three, Some(Digits::One))),
+        Ok((Digits::Two, Some(Digits::One))),
+        Ok((Digits::One, Some(Digits::Three))),
+        Ok((Digits::One, Some(Digits::Two))),
+        Ok((Digits::One, Some(Digits::One))),
+        Ok((Digits::One, None)),
+        Ok((Digits::Zero, Some(Digits::Seven))),
+        Ok((Digits::Zero, Some(Digits::Seven))),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::Eight, None)),
+        Ok((Digits::Four, None)),
+        Ok((Digits::Two, Some(Digits::Two))),
+        Ok((Digits::Two, None)),
+        Ok((Digits::One, Some(Digits::Three))),
+        Ok((Digits::One, Some(Digits::Two))),
+        Ok((Digits::One, Some(Digits::One))),
+        Ok((Digits::One, None)),
+        Ok((Digits::Zero, Some(Digits::Eight))),
+    ],
+    [
+        Err(MathErrors::DivisionByZero),
+        Ok((Digits::Nine, None)),
+        Ok((Digits::Four, Some(Digits::One))),
+        Ok((Digits::Three, None)),
+        Ok((Digits::Two, Some(Digits::One))),
+        Ok((Digits::One, Some(Digits::Four))),
+        Ok((Digits::One, Some(Digits::Three))),
+        Ok((Digits::One, Some(Digits::Two))),
+        Ok((Digits::One, Some(Digits::One))),
+        Ok((Digits::One, None)),
     ],
 ];
 
