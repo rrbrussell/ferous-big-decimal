@@ -15,6 +15,27 @@ enum Digits {
     Nine,
 }
 
+impl Digits {
+    fn add(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
+        return ADDITION_MATRIX[self.to_usize()][rhs.to_usize()];
+    }
+
+    const fn to_usize(self: Self) -> usize {
+        match self {
+            Digits::Zero => return 0,
+            Digits::One => return 1,
+            Digits::Two => return 2,
+            Digits::Three => return 3,
+            Digits::Four => return 4,
+            Digits::Five => return 5,
+            Digits::Six => return 6,
+            Digits::Seven => return 7,
+            Digits::Eight => return 8,
+            Digits::Nine => return 9,
+        }
+    }
+}
+
 const ADDITION_MATRIX: [[(Digits, Option<Digits>); 10]; 10] = [
     [
         (Digits::Zero, None),
@@ -137,27 +158,6 @@ const ADDITION_MATRIX: [[(Digits, Option<Digits>); 10]; 10] = [
         (Digits::Eight, Some(Digits::One)),
     ],
 ];
-
-impl Digits {
-    fn add(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
-        return ADDITION_MATRIX[self.to_usize()][rhs.to_usize()];
-    }
-
-    const fn to_usize(self: Self) -> usize {
-        match self {
-            Digits::Zero => return 0,
-            Digits::One => return 1,
-            Digits::Two => return 2,
-            Digits::Three => return 3,
-            Digits::Four => return 4,
-            Digits::Five => return 5,
-            Digits::Six => return 6,
-            Digits::Seven => return 7,
-            Digits::Eight => return 8,
-            Digits::Nine => return 9,
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
