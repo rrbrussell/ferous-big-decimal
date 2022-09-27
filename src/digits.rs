@@ -17,28 +17,28 @@ pub enum Digits {
 
 impl Digits {
     /// Adds rhs to self with any carry over ammount returned as an [Option].
-    const fn add(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
+    pub const fn add(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
         return ADDITION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
     /// Subtracts rhs from self with any borrowed ammount returned as an [Option].
-    const fn subtract(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
+    pub const fn subtract(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
         return SUBTRACTION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
     /// Multiplies self by rhs with any carry over amount returned as an [Option].
-    const fn multiply(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
+    pub const fn multiply(self: Self, rhs: Digits) -> (Digits, Option<Digits>) {
         return MULTIPLICATION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
     /// Divides self by rhs with any remainder returned as an [Option].
     ///
     /// [MathErrors::DivisionByZero] is returned if self or rhs are 0.
-    const fn divide(self: Self, rhs: Digits) -> Result<(Digits, Option<Digits>), MathErrors> {
+    pub const fn divide(self: Self, rhs: Digits) -> Result<(Digits, Option<Digits>), MathErrors> {
         return DIVISION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
-    const fn to_usize(self: Self) -> usize {
+    pub const fn to_usize(self: Self) -> usize {
         match self {
             Digits::Zero => return 0,
             Digits::One => return 1,
@@ -50,6 +50,21 @@ impl Digits {
             Digits::Seven => return 7,
             Digits::Eight => return 8,
             Digits::Nine => return 9,
+        }
+    }
+    
+    pub const fn to_char(self: Self) -> char {
+        match self {
+            Digits::Zero => {return '0';}
+            Digits::One => {return '1';}
+            Digits::Two => {return '2';}
+            Digits::Three => {return '3';}
+            Digits::Four => {return '4';}
+            Digits::Five => {return '5';}
+            Digits::Six => {return '6';}
+            Digits::Seven => {return '7';}
+            Digits::Eight => {return '8';}
+            Digits::Nine => {return '9';}
         }
     }
 }
