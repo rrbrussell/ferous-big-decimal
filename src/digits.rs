@@ -1,8 +1,9 @@
 #![warn(dead_code)]
 use super::MathErrors;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Digits {
+    #[default]
     Zero,
     One,
     Two,
