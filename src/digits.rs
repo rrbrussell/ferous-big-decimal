@@ -16,6 +16,12 @@ pub enum Digits {
     Nine,
 }
 
+impl Default for &Digits {
+    fn default() -> Self {
+        return &&Digits::Zero;
+    }
+}
+
 impl Digits {
     /// Adds rhs to self with any carry over ammount returned.
     pub const fn addition(self: Self, rhs: Digits) -> (Digits, Digits) {
