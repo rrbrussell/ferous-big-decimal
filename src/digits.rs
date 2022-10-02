@@ -23,29 +23,37 @@ impl Default for &Digits {
 }
 
 impl Digits {
-    /// Adds rhs to self with any carry over ammount returned.
-    pub const fn addition(self: Self, rhs: Digits) -> (Digits, Digits) {
+    /// Adds rhs to lhs with any carry over ammount returned.
+    pub const fn addition(self: &Self, rhs: Digits) -> (Digits, Digits) {
         return ADDITION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
+    /// Adds rhs and carry to self with any borrowed amount returned.
+    pub const fn fused_addition(&self, rhs: Digits, carry: Digits) -> (Digits, Digits) {
+        let (y, c) = rhs.addition(carry);
+        let (x, c2) = self.addition(y);
+        let (y, _) = c.addition(c2);
+        return (x, y);
+    }
+
     /// Subtracts rhs from self with any borrowed ammount returned.
-    pub const fn subtract(self: Self, rhs: Digits) -> (Digits, Digits) {
+    pub const fn subtract(&self, rhs: Digits) -> (Digits, Digits) {
         return SUBTRACTION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
     /// Multiplies self by rhs with any carry over amount returned.
-    pub const fn multiply(self: Self, rhs: Digits) -> (Digits, Digits) {
+    pub const fn multiply(&self, rhs: Digits) -> (Digits, Digits) {
         return MULTIPLICATION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
     /// Divides self by rhs with any remainder returned.
     ///
     /// [MathErrors::DivisionByZero] is returned if self or rhs are 0.
-    pub const fn divide(self: Self, rhs: Digits) -> Result<(Digits, Digits), MathErrors> {
+    pub const fn divide(&self, rhs: Digits) -> Result<(Digits, Digits), MathErrors> {
         return DIVISION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
-    pub const fn to_usize(self: Self) -> usize {
+    pub const fn to_usize(&self) -> usize {
         match self {
             Digits::Zero => return 0,
             Digits::One => return 1,
