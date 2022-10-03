@@ -112,22 +112,23 @@ impl<'a> Iterator for IntegersAscending<'a> {
     }
 }
 
-pub struct DecimalAcending<'a> {
+pub struct DecimalsAscending<'a> {
     first: &'a Vec<Digits>,
     second: &'a Vec<Digits>,
     current_power: usize,
     smaller: Smaller,
 }
 
-impl<'a> DecimalAcending<'a> {
-    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> DecimalAcending<'a> {
+impl<'a> DecimalsAscending<'a> {
+    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> DecimalsAscending<'a> {
         let mut smaller = Smaller::Niether;
         if first.len() < second.len() {
             smaller = Smaller::First;
-        } else {
+        }
+        if first.len() > second.len() {
             smaller = Smaller::Second;
         }
-        return DecimalAcending {
+        return DecimalsAscending {
             first,
             second,
             current_power: 0,
@@ -136,7 +137,7 @@ impl<'a> DecimalAcending<'a> {
     }
 }
 
-impl<'a> Iterator for DecimalAcending<'a> {
+impl<'a> Iterator for DecimalsAscending<'a> {
     type Item = (Digits, Digits);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -214,7 +215,7 @@ impl<'a> Iterator for DecimalAcending<'a> {
 mod test {
     use super::*;
     #[test]
-    fn test_decimal_ascending() {
+    fn test_decimals_ascending() {
         let test_data = [
             (Vec::new(), Vec::new(), vec![None]),
             (
@@ -247,7 +248,7 @@ mod test {
         ];
         for (first, second, results) in test_data {
             let mut counter: usize = 0;
-            let mut da: DecimalAcending = DecimalAcending::new(&first, &second);
+            let mut da: DecimalsAscending = DecimalsAscending::new(&first, &second);
             while counter < results.len() {
                 assert_eq!(da.next(), results[counter]);
                 counter += 1;
