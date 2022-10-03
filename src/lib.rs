@@ -5,11 +5,17 @@
 use std::cmp;
 use std::cmp::Ordering;
 use std::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::ops::Add;
+use std::ops::Sub;
 
 // Internal module declarations and imports.
 mod digits;
+mod iterators;
 use digits::Digits;
+use iterators::DecimalsAscending;
+use iterators::IntegersAscending;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MathErrors {
@@ -20,6 +26,25 @@ pub struct BigNumber {
     integer: Vec<Digits>,
     decimal: Vec<Digits>,
     negative: bool,
+}
+
+impl BigNumber {
+    pub fn negate(self: &mut Self) {
+        self.negative = !self.negative;
+    }
+}
+
+impl Clone for BigNumber {
+    fn clone(&self) -> Self {
+        let mut bn = BigNumber {
+            integer: Vec::<Digits>::with_capacity(self.integer.len()),
+            decimal: Vec::<Digits>::with_capacity(self.decimal.len()),
+            negative: self.negative,
+        };
+        bn.integer.extend(self.integer.iter());
+        bn.decimal.extend(self.decimal.iter());
+        return bn;
+    }
 }
 
 impl From<u128> for BigNumber {
@@ -45,37 +70,95 @@ impl Add for BigNumber {
     type Output = Self;
 
     fn add(self: Self, rhs: Self) -> Self {
-        todo!();
-        let lhs = self;
+        let lhs = &self;
         let length = cmp::max(lhs.decimal.len(), rhs.decimal.len());
         let mut result_decimal: Vec<Digits> = Vec::with_capacity(length);
-        let mut at = length;
         let mut carry = Digits::Zero;
-        let mut temp = Digits::Zero;
-        while at != 0 {
-            let x = lhs.decimal.get(at - 1);
-            let y = rhs.decimal.get(at - 1);
-            if x.is_none() {
-                (temp, carry) = y.unwrap().addition(carry);
-                result_decimal.push(temp);
-            } else {
-                if y.is_none() {
-                    (temp, carry) = x.unwrap().addition(carry);
+        let mut temp: Digits;
+
+        if lhs.negative == rhs.negative {
+            if length != 0 {
+                let da = DecimalsAscending::new(&lhs.decimal, &rhs.decimal);
+                for (x, y) in da {
+                    (temp, carry) = x.fused_addition(y, carry);
                     result_decimal.push(temp);
+                }
+                result_decimal.reverse();
+            }
+
+            let length = cmp::max(lhs.integer.len(), rhs.integer.len());
+            let mut result_integer: Vec<Digits> = Vec::with_capacity(length);
+            if length == 0 {
+                result_integer.push(carry);
+            } else {
+                let ia = IntegersAscending::new(&lhs.integer, &rhs.integer);
+                for (x, y) in ia {
+                    (temp, carry) = x.fused_addition(y, carry);
+                    result_integer.push(temp);
+                }
+                result_integer.reverse();
+            }
+            return BigNumber {
+                integer: result_integer,
+                decimal: result_decimal,
+                negative: lhs.negative,
+            };
+        } else {
+            match lhs.cmp(&rhs) {
+                Ordering::Equal => {
+                    return BigNumber {
+                        integer: Vec::new(),
+                        decimal: Vec::new(),
+                        negative: false,
+                    }
+                }
+                Ordering::Greater => {
+                    let mut rhsc = rhs.clone();
+                    rhsc.negate();
+                    let mut result = lhs.clone().sub(rhsc);
+                    result.negative = lhs.negative;
+                    return result;
+                }
+                Ordering::Less => {
+                    let mut lhsc = lhs.clone();
+                    lhsc.negate();
+                    let mut result = rhs.clone().sub(lhsc);
+                    result.negative = rhs.negative;
+                    return result;
                 }
             }
         }
+    }
+}
 
-        let length = cmp::max(lhs.integer.len(), rhs.integer.len());
-        let mut result_integer: Vec<Digits> = Vec::with_capacity(length);
-        at = length;
-        temp = Digits::Zero;
+impl Sub for BigNumber {
+    type Output = Self;
 
-        return BigNumber {
-            integer: result_integer,
-            decimal: result_decimal,
-            negative: false,
-        };
+    fn sub(self: Self, rhs: Self) -> Self {
+        let lhs: &BigNumber = &self;
+        let length: usize = cmp::max(lhs.decimal.len(), rhs.decimal.len());
+        let mut results_decimal: Vec<Digits> = Vec::with_capacity(length);
+        let mut carry: Digits = Digits::Zero;
+        let mut temp: Digits;
+
+        if lhs.negative == rhs.negative {
+            if length != 0 {
+                let da: DecimalsAscending = DecimalsAscending::new(&lhs.decimal, &rhs.decimal);
+                for (x, y) in da {
+                    (temp, carry) = x.fused_subtraction(y, carry);
+                    results_decimal.push(temp);
+                }
+                results_decimal.reverse();
+            }
+
+            let length: usize = cmp::max(lhs.integer.len(), rhs.integer.len());
+            let mut results_integer: Vec<Digits> = Vec::with_capacity(length);
+            if length == 0 {
+                results_integer.push(carry)
+            }
+        } else {
+        }
+        todo!();
     }
 }
 
@@ -171,8 +254,8 @@ impl PartialEq for BigNumber {
 
 impl Eq for BigNumber {}
 
-impl fmt::Display for BigNumber {
-    fn fmt(self: &Self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for BigNumber {
+    fn fmt(self: &Self, formatter: &mut Formatter<'_>) -> fmt::Result {
         if self.negative {
             write!(formatter, "-")?;
         };
