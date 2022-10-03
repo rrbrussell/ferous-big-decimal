@@ -41,6 +41,13 @@ impl Digits {
         return SUBTRACTION_MATRIX[self.to_usize()][rhs.to_usize()];
     }
 
+    pub const fn fused_subtraction(&self, rhs: Digits, carry: Digits) -> (Digits, Digits) {
+        let (y, c) = self.subtract(rhs);
+        let (x, c2) = y.subtract(carry);
+        let (y, _) = c.addition(c2);
+        return (x, y);
+    }
+
     /// Multiplies self by rhs with any carry over amount returned.
     pub const fn multiply(&self, rhs: Digits) -> (Digits, Digits) {
         return MULTIPLICATION_MATRIX[self.to_usize()][rhs.to_usize()];
