@@ -29,6 +29,12 @@ pub struct BigNumber {
 }
 
 impl BigNumber {
+    pub fn is_negative(self: &Self) -> bool {
+        return self.negative;
+    }
+    pub fn is_positive(self: &Self) -> bool {
+        return !self.negative;
+    }
     pub fn negate(self: &mut Self) {
         self.negative = !self.negative;
     }
@@ -166,10 +172,10 @@ impl Ord for BigNumber {
     fn cmp(&self, rhs: &Self) -> Ordering {
         let lhs = &self;
         // Negative numbers are always less than positive numbers.
-        if lhs.negative && !rhs.negative {
+        if lhs.negative && (rhs.negative == false) {
             return Ordering::Less;
         }
-        if rhs.negative && !lhs.negative {
+        if rhs.negative && (lhs.negative == false) {
             return Ordering::Greater;
         }
         // We now know that lhs and rhs have the same sign.
