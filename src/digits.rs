@@ -18,7 +18,7 @@ pub enum Digits {
 
 impl Default for &Digits {
     fn default() -> Self {
-        return &&Digits::Zero;
+        return &Digits::Zero;
     }
 }
 
