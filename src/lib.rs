@@ -42,6 +42,14 @@ impl Not for Sign {
     }
 }
 
+/// BigNumber is my attempt at an arbitrary precision mathematical type for
+/// Rust.
+///
+/// This is not intended to be the most performant option available. It is
+/// mostly for me to learn more about Rust and practice programming.
+///
+/// Internally the type uses an enum that represents the decimal digits.
+/// The integer and decimal portions are kept in separate Vecs.
 pub struct BigNumber {
     integer: Vec<Digits>,
     decimal: Vec<Digits>,
@@ -96,6 +104,11 @@ impl BigNumber {
     }
     pub fn negate(self: &mut Self) {
         self.sign = !self.sign;
+    }
+
+    /// Cleans up the internal representation of a BigNumber.
+    pub fn normalize(self: &mut Self) {
+        todo!();
     }
 
     /// this performs Nines Complement addition of the subtrahend and the
@@ -187,6 +200,8 @@ impl Add for BigNumber {
 
     /// Adds rhs to self.
     ///
+    /// Call [`BigNumber::normalize`] on both values first.
+    ///
     /// Rule 1: If self and rhs are both of the same sign then add rhs to self.
     /// The result has the same sign as both self and rhs.
     ///
@@ -222,6 +237,8 @@ impl Sub for BigNumber {
     type Output = Self;
 
     /// Subtracts rhs from self.
+    ///
+    /// Call [`BigNumber::normalize`] on both values first.
     ///
     /// Rule 1: If self and rhs are both positive then subtract rhs from self.
     /// The answer is negative if rhs is greater than self.
