@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["ferrous_big_decimal"];

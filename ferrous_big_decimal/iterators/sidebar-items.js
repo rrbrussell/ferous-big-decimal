@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Smaller",""]],"struct":[["DecimalsByAscendingPower",""],["DecimalsByDescendingPower",""],["IntegersByAscendingPower",""],["IntegersByDescendingPower",""]]};

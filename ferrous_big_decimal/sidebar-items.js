@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["MathErrors",""],["Sign",""]],"mod":[["digits",""],["iterators",""]],"struct":[["BigNumber","BigNumber is my attempt at an arbitrary precision mathematical type for Rust."]]};

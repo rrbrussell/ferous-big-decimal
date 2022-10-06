@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["ADDITION_MATRIX",""],["DIVISION_MATRIX",""],["MULTIPLICATION_MATRIX",""],["SUBTRACTION_MATRIX",""]],"enum":[["Digits",""]]};
