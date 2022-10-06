@@ -36,6 +36,24 @@ impl Digits {
         return (x, y);
     }
 
+    /// Returns the complement of a Digit.
+    ///
+    /// Used to speed up subtraction.
+    pub const fn complement(x: Digits) -> Digits {
+        match x {
+            Digits::Zero => return Digits::Nine,
+            Digits::One => return Digits::Eight,
+            Digits::Two => return Digits::Seven,
+            Digits::Three => return Digits::Six,
+            Digits::Four => return Digits::Five,
+            Digits::Five => return Digits::Four,
+            Digits::Six => return Digits::Three,
+            Digits::Seven => return Digits::Two,
+            Digits::Eight => return Digits::One,
+            Digits::Nine => return Digits::Zero,
+        }
+    }
+
     /// Subtracts rhs from self with any borrowed ammount returned.
     pub const fn subtract(&self, rhs: Digits) -> (Digits, Digits) {
         return SUBTRACTION_MATRIX[self.to_usize()][rhs.to_usize()];

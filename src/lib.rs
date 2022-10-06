@@ -15,6 +15,7 @@ mod digits;
 mod iterators;
 use digits::Digits;
 use iterators::DecimalsAscending;
+use iterators::DecimalsDescending;
 use iterators::IntegersAscending;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -29,6 +30,9 @@ pub struct BigNumber {
 }
 
 impl BigNumber {
+    pub fn are_same_sign(self: &Self, other: &Self) -> bool {
+        return self.negative == other.negative;
+    }
     pub fn is_negative(self: &Self) -> bool {
         return self.negative;
     }
@@ -37,6 +41,13 @@ impl BigNumber {
     }
     pub fn negate(self: &mut Self) {
         self.negative = !self.negative;
+    }
+    pub fn zero() -> BigNumber {
+        return BigNumber {
+            integer: vec![Digits::Zero],
+            decimal: vec![Digits::Zero],
+            negative: false,
+        };
     }
 }
 
@@ -112,11 +123,7 @@ impl Add for BigNumber {
         } else {
             match lhs.cmp(&rhs) {
                 Ordering::Equal => {
-                    return BigNumber {
-                        integer: Vec::new(),
-                        decimal: Vec::new(),
-                        negative: false,
-                    }
+                    return BigNumber::zero();
                 }
                 Ordering::Greater => {
                     let mut rhsc = rhs.clone();
@@ -142,27 +149,49 @@ impl Sub for BigNumber {
 
     fn sub(self: Self, rhs: Self) -> Self {
         let lhs: &BigNumber = &self;
+
+        let order: Ordering = lhs.cmp(&rhs);
+        // Subtracting equal quantities from each other is defined to be zero.
+        if order == Ordering::Equal {
+            return BigNumber::zero();
+        }
+
         let length: usize = cmp::max(lhs.decimal.len(), rhs.decimal.len());
         let mut results_decimal: Vec<Digits> = Vec::with_capacity(length);
         let mut carry: Digits = Digits::Zero;
         let mut temp: Digits;
 
-        if lhs.negative == rhs.negative {
-            if length != 0 {
-                let da: DecimalsAscending = DecimalsAscending::new(&lhs.decimal, &rhs.decimal);
-                for (x, y) in da {
-                    (temp, carry) = x.fused_subtraction(y, carry);
-                    results_decimal.push(temp);
-                }
-                results_decimal.reverse();
+        if lhs.are_same_sign(&rhs) {
+            let da: DecimalsAscending = DecimalsAscending::new(&lhs.decimal, &rhs.decimal);
+            for (x, y) in da {
+                (temp, carry) = Digits::complement(x).fused_addition(y, carry);
+                results_decimal.push(temp);
+            }
+            results_decimal.reverse();
+            for x in results_decimal.iter_mut() {
+                *x = Digits::complement(*x);
             }
 
             let length: usize = cmp::max(lhs.integer.len(), rhs.integer.len());
             let mut results_integer: Vec<Digits> = Vec::with_capacity(length);
             if length == 0 {
-                results_integer.push(carry)
+                results_integer.push(Digits::complement(carry));
+            } else {
+                let ia: IntegersAscending = IntegersAscending::new(&lhs.integer, &rhs.decimal);
+                for (x, y) in ia {
+                    (temp, carry) = Digits::complement(x).fused_addition(y, carry);
+                    results_integer.push(temp);
+                }
+                results_integer.reverse();
+                for x in results_integer.iter_mut() {
+                    *x = Digits::complement(*x);
+                }
             }
-        } else {
+            return BigNumber {
+                integer: results_integer,
+                decimal: results_decimal,
+                negative: lhs.negative,
+            };
         }
         todo!();
     }
@@ -172,10 +201,10 @@ impl Ord for BigNumber {
     fn cmp(&self, rhs: &Self) -> Ordering {
         let lhs = &self;
         // Negative numbers are always less than positive numbers.
-        if lhs.negative && (rhs.negative == false) {
+        if lhs.is_negative() && rhs.is_positive() {
             return Ordering::Less;
         }
-        if rhs.negative && (lhs.negative == false) {
+        if lhs.is_positive() && rhs.is_negative() {
             return Ordering::Greater;
         }
         // We now know that lhs and rhs have the same sign.
@@ -192,49 +221,30 @@ impl Ord for BigNumber {
             Ordering::Greater => return Ordering::Greater,
             Ordering::Less => return Ordering::Less,
             Ordering::Equal => {
-                // Okay now we have to use the decimal portion for comparison.
-                // First check if the lengths of the decimal portion are equal.
-                if lhs.decimal.len() == rhs.decimal.len() {
-                    return lhs.decimal.cmp(&rhs.decimal);
-                }
-                // Now, who has the shorter length decimal portion.
-                if lhs.decimal.len() > rhs.decimal.len() {
-                    // lhs has a longer decimal portion.
-                    let x = &lhs.decimal[(0..rhs.decimal.len())];
-                    let x_compared = x.cmp(&rhs.decimal);
-                    if !lhs.negative {
-                        // positive numbers
-                        match x_compared {
-                            Ordering::Equal => return Ordering::Greater,
-                            Ordering::Greater => return Ordering::Greater,
-                            Ordering::Less => return Ordering::Less,
-                        };
+                let mut order: Ordering = Ordering::Equal;
+                let mut dd: DecimalsDescending =
+                    DecimalsDescending::new(&lhs.decimal, &rhs.decimal);
+                while order == Ordering::Equal {
+                    let next = dd.next();
+                    if next.is_none() {
+                        break;
                     } else {
-                        // Negative numbers
-                        match x_compared {
-                            Ordering::Equal => return Ordering::Less,
-                            Ordering::Greater => return Ordering::Less,
-                            Ordering::Less => return Ordering::Greater,
-                        }
+                        let (x, y) = next.unwrap();
+                        order = x.cmp(&y);
                     }
+                }
+                if lhs.is_positive() {
+                    match order {
+                        Ordering::Equal => return Ordering::Equal,
+                        Ordering::Greater => return Ordering::Greater,
+                        Ordering::Less => return Ordering::Less,
+                    };
                 } else {
-                    // rhs has a longer decimal portion.
-                    let x = &rhs.decimal[(0..lhs.decimal.len())];
-                    let x_compared = lhs.decimal.cmp(&Vec::from(x));
-                    if !lhs.negative {
-                        // positive numbers
-                        match x_compared {
-                            Ordering::Equal => return Ordering::Less,
-                            Ordering::Greater => return Ordering::Less,
-                            Ordering::Less => return Ordering::Greater,
-                        };
-                    } else {
-                        // Negative numbers
-                        match x_compared {
-                            Ordering::Equal => return Ordering::Greater,
-                            Ordering::Greater => return Ordering::Greater,
-                            Ordering::Less => return Ordering::Less,
-                        }
+                    // Negative numbers
+                    match order {
+                        Ordering::Equal => return Ordering::Equal,
+                        Ordering::Greater => return Ordering::Less,
+                        Ordering::Less => return Ordering::Greater,
                     }
                 }
             }

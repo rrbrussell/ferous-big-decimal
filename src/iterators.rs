@@ -112,6 +112,97 @@ impl<'a> Iterator for IntegersAscending<'a> {
     }
 }
 
+pub struct IntegersDescending<'a> {
+    first: std::slice::Iter<'a, Digits>,
+    second: std::slice::Iter<'a, Digits>,
+    current_power: usize,
+    smaller: Smaller,
+    smallers_length: usize,
+}
+
+impl<'a> IntegersDescending<'a> {
+    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> IntegersDescending<'a> {
+        let mut smaller: Smaller = Smaller::Niether;
+        if first.len() < second.len() {
+            smaller = Smaller::First;
+        }
+        if first.len() > second.len() {
+            smaller = Smaller::Second;
+        }
+        return IntegersDescending {
+            first: first.iter(),
+            second: second.iter(),
+            current_power: max(first.len(), second.len()),
+            smaller,
+            smallers_length: min(first.len(), second.len()),
+        };
+    }
+}
+
+impl<'a> Iterator for IntegersDescending<'a> {
+    type Item = (Digits, Digits);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_power == 0 {
+            return None;
+        }
+
+        match self.smaller {
+            Smaller::First => {
+                let firsts_result: Option<&Digits>;
+                let seconds_result: Option<&Digits>;
+                let firsts_digit: &Digits;
+                let seconds_digit: &Digits;
+                if self.current_power > self.smallers_length {
+                    firsts_digit = &Digits::Zero;
+                } else {
+                    firsts_result = self.first.next();
+                    firsts_digit = firsts_result.unwrap_or_default();
+                }
+                seconds_result = self.second.next();
+                seconds_digit = seconds_result.unwrap_or_default();
+                self.current_power -= 1;
+                if seconds_result.is_none() {
+                    return None;
+                } else {
+                    return Some((*firsts_digit, *seconds_digit));
+                }
+            }
+            Smaller::Second => {
+                let firsts_result: Option<&Digits>;
+                let seconds_result: Option<&Digits>;
+                let firsts_digit: &Digits;
+                let seconds_digit: &Digits;
+                if self.current_power > self.smallers_length {
+                    seconds_digit = &Digits::Zero;
+                } else {
+                    seconds_result = self.second.next();
+                    seconds_digit = seconds_result.unwrap_or_default();
+                }
+                firsts_result = self.first.next();
+                firsts_digit = firsts_result.unwrap_or_default();
+                self.current_power -= 1;
+                if firsts_result.is_none() {
+                    return None;
+                } else {
+                    return Some((*firsts_digit, *seconds_digit));
+                }
+            }
+            Smaller::Niether => {
+                let firsts_result: Option<&Digits> = self.first.next();
+                let seconds_result: Option<&Digits> = self.second.next();
+                let firsts_digit: &Digits = firsts_result.unwrap_or_default();
+                let seconds_digit: &Digits = seconds_result.unwrap_or_default();
+                if firsts_result.is_none() && seconds_result.is_none() {
+                    return None;
+                } else {
+                    return Some((*firsts_digit, *seconds_digit));
+                }
+            }
+        }
+    }
+}
+
 pub struct DecimalsAscending<'a> {
     first: &'a Vec<Digits>,
     second: &'a Vec<Digits>,
@@ -207,6 +298,37 @@ impl<'a> Iterator for DecimalsAscending<'a> {
                     return None;
                 }
             }
+        }
+    }
+}
+
+pub struct DecimalsDescending<'a> {
+    first: std::slice::Iter<'a, Digits>,
+    second: std::slice::Iter<'a, Digits>,
+}
+
+impl<'a> DecimalsDescending<'a> {
+    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> DecimalsDescending<'a> {
+        return DecimalsDescending {
+            first: first.iter(),
+            second: second.iter(),
+        };
+    }
+}
+
+impl<'a> Iterator for DecimalsDescending<'a> {
+    type Item = (Digits, Digits);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let firsts_result: Option<&Digits> = self.first.next();
+        let seconds_result: Option<&Digits> = self.second.next();
+        let firsts_digit: &Digits = firsts_result.unwrap_or_default();
+        let seconds_digit: &Digits = seconds_result.unwrap_or_default();
+
+        if firsts_result.is_none() && seconds_result.is_none() {
+            return None;
+        } else {
+            return Some((*firsts_digit, *seconds_digit));
         }
     }
 }
