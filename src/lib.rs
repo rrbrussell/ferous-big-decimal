@@ -8,45 +8,144 @@ use std::fmt;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::ops::Add;
+use std::ops::Not;
 use std::ops::Sub;
 
 // Internal module declarations and imports.
 mod digits;
 mod iterators;
 use digits::Digits;
-use iterators::DecimalsAscending;
-use iterators::DecimalsDescending;
-use iterators::IntegersAscending;
+use iterators::DecimalsByAscendingPower;
+use iterators::DecimalsByDescendingPower;
+use iterators::IntegersByAscendingPower;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MathErrors {
     DivisionByZero,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+enum Sign {
+    Negative,
+    #[default]
+    Positive,
+}
+
+impl Not for Sign {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Sign::Negative => return Sign::Positive,
+            Sign::Positive => return Sign::Negative,
+        }
+    }
+}
+
 pub struct BigNumber {
     integer: Vec<Digits>,
     decimal: Vec<Digits>,
-    negative: bool,
+    sign: Sign,
 }
 
 impl BigNumber {
-    pub fn are_same_sign(self: &Self, other: &Self) -> bool {
-        return self.negative == other.negative;
+    /// Adds x to y.
+    fn add_helper(x: &BigNumber, y: &BigNumber) -> BigNumber {
+        let length: usize = cmp::max(x.decimal.len(), y.decimal.len());
+        let mut result_decimal: Vec<Digits> = Vec::with_capacity(length);
+        let mut carry: Digits = Digits::Zero;
+        let mut temp: Digits;
+        if length != 0 {
+            let da: DecimalsByAscendingPower =
+                DecimalsByAscendingPower::new(&x.decimal, &y.decimal);
+            for (temp_x, temp_y) in da {
+                (temp, carry) = temp_x.fused_addition(temp_y, carry);
+                result_decimal.push(temp);
+            }
+            result_decimal.reverse();
+        }
+
+        let length: usize = cmp::max(x.integer.len(), y.integer.len());
+        let mut result_integer: Vec<Digits> = Vec::with_capacity(length);
+        if length == 0 {
+            result_integer.push(carry);
+        } else {
+            let ia: IntegersByAscendingPower =
+                IntegersByAscendingPower::new(&x.integer, &y.integer);
+            for (temp_x, temp_y) in ia {
+                (temp, carry) = temp_x.fused_addition(temp_y, carry);
+                result_integer.push(temp);
+            }
+            result_integer.reverse();
+        }
+        return BigNumber {
+            integer: result_integer,
+            decimal: result_decimal,
+            sign: x.sign,
+        };
+    }
+
+    pub fn is_the_same_sign_as(self: &Self, other: &Self) -> bool {
+        return self.sign == other.sign;
     }
     pub fn is_negative(self: &Self) -> bool {
-        return self.negative;
+        return self.sign == Sign::Negative;
     }
     pub fn is_positive(self: &Self) -> bool {
-        return !self.negative;
+        return self.sign == Sign::Positive;
     }
     pub fn negate(self: &mut Self) {
-        self.negative = !self.negative;
+        self.sign = !self.sign;
     }
+
+    /// this performs Nines Complement addition of the subtrahend and the
+    /// minuend.
+    fn sub_helper(subtrahend: &BigNumber, minuend: &BigNumber) -> BigNumber {
+        let length: usize = cmp::max(subtrahend.decimal.len(), minuend.decimal.len());
+        let mut results_decimal: Vec<Digits> = Vec::with_capacity(length);
+        let mut carry: Digits = Digits::Zero;
+        let mut temp: Digits;
+
+        let da: DecimalsByAscendingPower =
+            DecimalsByAscendingPower::new(&subtrahend.decimal, &minuend.decimal);
+        for (x, y) in da {
+            (temp, carry) = Digits::complement(x).fused_addition(y, carry);
+            results_decimal.push(temp);
+        }
+        results_decimal.reverse();
+        for x in results_decimal.iter_mut() {
+            *x = Digits::complement(*x);
+        }
+
+        let length: usize = cmp::max(subtrahend.integer.len(), minuend.integer.len());
+        let mut results_integer: Vec<Digits> = Vec::with_capacity(length);
+        if length == 0 {
+            results_integer.push(Digits::complement(carry));
+        } else {
+            let ia: IntegersByAscendingPower =
+                IntegersByAscendingPower::new(&subtrahend.integer, &minuend.decimal);
+            for (x, y) in ia {
+                (temp, carry) = Digits::complement(x).fused_addition(y, carry);
+                results_integer.push(temp);
+            }
+            results_integer.reverse();
+            for x in results_integer.iter_mut() {
+                *x = Digits::complement(*x);
+            }
+        }
+        return BigNumber {
+            integer: results_integer,
+            decimal: results_decimal,
+            sign: Sign::Positive,
+        };
+    }
+
+    /// Returns a BigNumber that represents zero.
     pub fn zero() -> BigNumber {
         return BigNumber {
             integer: vec![Digits::Zero],
             decimal: vec![Digits::Zero],
-            negative: false,
+            sign: Sign::Positive,
         };
     }
 }
@@ -56,7 +155,7 @@ impl Clone for BigNumber {
         let mut bn = BigNumber {
             integer: Vec::<Digits>::with_capacity(self.integer.len()),
             decimal: Vec::<Digits>::with_capacity(self.decimal.len()),
-            negative: self.negative,
+            sign: self.sign,
         };
         bn.integer.extend(self.integer.iter());
         bn.decimal.extend(self.decimal.iter());
@@ -78,7 +177,7 @@ impl From<u128> for BigNumber {
         return BigNumber {
             integer: jim,
             decimal: Vec::new(),
-            negative: false,
+            sign: Sign::Positive,
         };
     }
 }
@@ -86,57 +185,32 @@ impl From<u128> for BigNumber {
 impl Add for BigNumber {
     type Output = Self;
 
+    /// Adds rhs to self.
+    ///
+    /// Rule 1: If self and rhs are both of the same sign then add rhs to self.
+    /// The result has the same sign as both self and rhs.
+    ///
+    /// Rule 2: If self and rhs are not of the same sign the subtract the
+    /// smaller magnitude number from the larger magnitude number. The result
+    /// has the sign of the largest magnitude number.
     fn add(self: Self, rhs: Self) -> Self {
-        let lhs = &self;
-        let length = cmp::max(lhs.decimal.len(), rhs.decimal.len());
-        let mut result_decimal: Vec<Digits> = Vec::with_capacity(length);
-        let mut carry = Digits::Zero;
-        let mut temp: Digits;
+        let lhs: &BigNumber = &self;
 
-        if lhs.negative == rhs.negative {
-            if length != 0 {
-                let da = DecimalsAscending::new(&lhs.decimal, &rhs.decimal);
-                for (x, y) in da {
-                    (temp, carry) = x.fused_addition(y, carry);
-                    result_decimal.push(temp);
-                }
-                result_decimal.reverse();
-            }
-
-            let length = cmp::max(lhs.integer.len(), rhs.integer.len());
-            let mut result_integer: Vec<Digits> = Vec::with_capacity(length);
-            if length == 0 {
-                result_integer.push(carry);
-            } else {
-                let ia = IntegersAscending::new(&lhs.integer, &rhs.integer);
-                for (x, y) in ia {
-                    (temp, carry) = x.fused_addition(y, carry);
-                    result_integer.push(temp);
-                }
-                result_integer.reverse();
-            }
-            return BigNumber {
-                integer: result_integer,
-                decimal: result_decimal,
-                negative: lhs.negative,
-            };
+        if lhs.is_the_same_sign_as(&rhs) {
+            return BigNumber::add_helper(lhs, &rhs);
         } else {
             match lhs.cmp(&rhs) {
                 Ordering::Equal => {
                     return BigNumber::zero();
                 }
                 Ordering::Greater => {
-                    let mut rhsc = rhs.clone();
-                    rhsc.negate();
-                    let mut result = lhs.clone().sub(rhsc);
-                    result.negative = lhs.negative;
+                    let mut result: BigNumber = BigNumber::sub_helper(lhs, &rhs);
+                    result.sign = lhs.sign;
                     return result;
                 }
                 Ordering::Less => {
-                    let mut lhsc = lhs.clone();
-                    lhsc.negate();
-                    let mut result = rhs.clone().sub(lhsc);
-                    result.negative = rhs.negative;
+                    let mut result: BigNumber = BigNumber::sub_helper(&rhs, lhs);
+                    result.sign = rhs.sign;
                     return result;
                 }
             }
@@ -147,6 +221,17 @@ impl Add for BigNumber {
 impl Sub for BigNumber {
     type Output = Self;
 
+    /// Subtracts rhs from self.
+    ///
+    /// Rule 1: If self and rhs are both positive then subtract rhs from self.
+    /// The answer is negative if rhs is greater than self.
+    ///
+    /// Rule 2: If self is negative and rhs is positive then add rhs to self.
+    /// The answer is negative.
+    ///
+    /// Rule 3: If self is negative and rhs is negative then subtract the
+    /// smaller magnitude number from the larger magnitude number. The answer
+    /// is negative if self is larger. The answer is positive is rhs is larger.
     fn sub(self: Self, rhs: Self) -> Self {
         let lhs: &BigNumber = &self;
 
@@ -155,45 +240,28 @@ impl Sub for BigNumber {
         if order == Ordering::Equal {
             return BigNumber::zero();
         }
-
-        let length: usize = cmp::max(lhs.decimal.len(), rhs.decimal.len());
-        let mut results_decimal: Vec<Digits> = Vec::with_capacity(length);
-        let mut carry: Digits = Digits::Zero;
-        let mut temp: Digits;
-
-        if lhs.are_same_sign(&rhs) {
-            let da: DecimalsAscending = DecimalsAscending::new(&lhs.decimal, &rhs.decimal);
-            for (x, y) in da {
-                (temp, carry) = Digits::complement(x).fused_addition(y, carry);
-                results_decimal.push(temp);
+        let mut result: BigNumber = BigNumber::zero();
+        if lhs.is_positive() && rhs.is_positive() {
+            result = BigNumber::sub_helper(lhs, &rhs);
+            if order == Ordering::Less {
+                result.sign = Sign::Negative;
             }
-            results_decimal.reverse();
-            for x in results_decimal.iter_mut() {
-                *x = Digits::complement(*x);
-            }
-
-            let length: usize = cmp::max(lhs.integer.len(), rhs.integer.len());
-            let mut results_integer: Vec<Digits> = Vec::with_capacity(length);
-            if length == 0 {
-                results_integer.push(Digits::complement(carry));
-            } else {
-                let ia: IntegersAscending = IntegersAscending::new(&lhs.integer, &rhs.decimal);
-                for (x, y) in ia {
-                    (temp, carry) = Digits::complement(x).fused_addition(y, carry);
-                    results_integer.push(temp);
-                }
-                results_integer.reverse();
-                for x in results_integer.iter_mut() {
-                    *x = Digits::complement(*x);
-                }
-            }
-            return BigNumber {
-                integer: results_integer,
-                decimal: results_decimal,
-                negative: lhs.negative,
-            };
         }
-        todo!();
+        if lhs.is_negative() && rhs.is_positive() {
+            result = BigNumber::add_helper(lhs, &rhs);
+            result.sign = Sign::Negative;
+        }
+        if lhs.is_negative() && rhs.is_negative() {
+            if order == Ordering::Greater {
+                result = BigNumber::sub_helper(lhs, &rhs);
+                result.sign = Sign::Negative;
+            }
+            if order == Ordering::Less {
+                result = BigNumber::sub_helper(&rhs, lhs);
+                result.sign = Sign::Positive;
+            }
+        }
+        return result;
     }
 }
 
@@ -222,8 +290,8 @@ impl Ord for BigNumber {
             Ordering::Less => return Ordering::Less,
             Ordering::Equal => {
                 let mut order: Ordering = Ordering::Equal;
-                let mut dd: DecimalsDescending =
-                    DecimalsDescending::new(&lhs.decimal, &rhs.decimal);
+                let mut dd: DecimalsByDescendingPower =
+                    DecimalsByDescendingPower::new(&lhs.decimal, &rhs.decimal);
                 while order == Ordering::Equal {
                     let next = dd.next();
                     if next.is_none() {
@@ -272,7 +340,7 @@ impl Eq for BigNumber {}
 
 impl Display for BigNumber {
     fn fmt(self: &Self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        if self.negative {
+        if self.is_negative() {
             write!(formatter, "-")?;
         };
         let mut whole = String::with_capacity(self.integer.len());
@@ -307,7 +375,7 @@ mod test {
                 BigNumber {
                     integer: Vec::new(),
                     decimal: Vec::new(),
-                    negative: false,
+                    sign: Sign::Positive,
                 },
                 "0",
             ),
@@ -315,7 +383,7 @@ mod test {
                 BigNumber {
                     integer: Vec::new(),
                     decimal: Vec::new(),
-                    negative: true,
+                    sign: Sign::Negative,
                 },
                 "-0",
             ),
@@ -323,7 +391,7 @@ mod test {
                 BigNumber {
                     integer: vec![Digits::Zero],
                     decimal: Vec::new(),
-                    negative: false,
+                    sign: Sign::Positive,
                 },
                 "0",
             ),
@@ -331,7 +399,7 @@ mod test {
                 BigNumber {
                     integer: Vec::new(),
                     decimal: vec![Digits::Zero, Digits::One],
-                    negative: false,
+                    sign: Sign::Positive,
                 },
                 "0.01",
             ),
@@ -349,12 +417,12 @@ mod test {
                     BigNumber {
                         integer: vec![Digits::Three, Digits::Zero],
                         decimal: Vec::new(),
-                        negative: true,
+                        sign: Sign::Negative,
                     },
                     BigNumber {
                         integer: vec![Digits::Three],
                         decimal: Vec::new(),
-                        negative: false,
+                        sign: Sign::Positive,
                     },
                 ),
                 Ordering::Less,
@@ -364,12 +432,12 @@ mod test {
                     BigNumber {
                         integer: vec![Digits::Three, Digits::Zero],
                         decimal: Vec::new(),
-                        negative: false,
+                        sign: Sign::Positive,
                     },
                     BigNumber {
                         integer: vec![Digits::Three],
                         decimal: Vec::new(),
-                        negative: true,
+                        sign: Sign::Negative,
                     },
                 ),
                 Ordering::Greater,
@@ -379,12 +447,12 @@ mod test {
                     BigNumber {
                         integer: vec![Digits::Three, Digits::Zero],
                         decimal: Vec::new(),
-                        negative: false,
+                        sign: Sign::Positive,
                     },
                     BigNumber {
                         integer: vec![Digits::Three],
                         decimal: Vec::new(),
-                        negative: false,
+                        sign: Sign::Positive,
                     },
                 ),
                 Ordering::Greater,
@@ -394,12 +462,12 @@ mod test {
                     BigNumber {
                         integer: vec![Digits::Three],
                         decimal: Vec::new(),
-                        negative: false,
+                        sign: Sign::Positive,
                     },
                     BigNumber {
                         integer: vec![Digits::Three, Digits::Zero],
                         decimal: Vec::new(),
-                        negative: false,
+                        sign: Sign::Positive,
                     },
                 ),
                 Ordering::Less,
