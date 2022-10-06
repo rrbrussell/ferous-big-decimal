@@ -50,6 +50,7 @@ impl Not for Sign {
 ///
 /// Internally the type uses an enum that represents the decimal digits.
 /// The integer and decimal portions are kept in separate Vecs.
+#[derive(Debug)]
 pub struct BigNumber {
     integer: Vec<Digits>,
     decimal: Vec<Digits>,
@@ -83,6 +84,9 @@ impl BigNumber {
             for (temp_x, temp_y) in ia {
                 (temp, carry) = temp_x.fused_addition(temp_y, carry);
                 result_integer.push(temp);
+            }
+            if carry != Digits::Zero {
+                result_integer.push(carry);
             }
             result_integer.reverse();
         }
@@ -492,6 +496,72 @@ mod test {
         ];
         for ((left, right), expected) in test_data {
             assert_eq!(left.cmp(&right), expected);
+        }
+    }
+
+    #[test]
+    fn test_big_number_add() {
+        let test_data = [
+            (
+                (
+                    BigNumber {
+                        integer: vec![Digits::Three],
+                        decimal: Vec::new(),
+                        sign: Sign::Positive,
+                    },
+                    BigNumber {
+                        integer: vec![Digits::Three],
+                        decimal: Vec::new(),
+                        sign: Sign::Positive,
+                    },
+                ),
+                BigNumber {
+                    integer: vec![Digits::Six],
+                    decimal: Vec::new(),
+                    sign: Sign::Positive,
+                },
+            ),
+            (
+                (
+                    BigNumber {
+                        integer: vec![Digits::Seven],
+                        decimal: Vec::new(),
+                        sign: Sign::Positive,
+                    },
+                    BigNumber {
+                        integer: vec![Digits::Seven],
+                        decimal: vec![Digits::Seven],
+                        sign: Sign::Positive,
+                    },
+                ),
+                BigNumber {
+                    integer: vec![Digits::One, Digits::Four],
+                    decimal: vec![Digits::Seven],
+                    sign: Sign::Positive,
+                },
+            ),
+            (
+                (
+                    BigNumber {
+                        integer: vec![Digits::Seven],
+                        decimal: vec![Digits::Nine],
+                        sign: Sign::Positive,
+                    },
+                    BigNumber {
+                        integer: Vec::new(),
+                        decimal: vec![Digits::Nine],
+                        sign: Sign::Positive,
+                    },
+                ),
+                BigNumber {
+                    integer: vec![Digits::Eight],
+                    decimal: vec![Digits::Eight],
+                    sign: Sign::Positive,
+                },
+            ),
+        ];
+        for ((left, right), expected) in test_data {
+            assert_eq!(left.add(right), expected);
         }
     }
 }
