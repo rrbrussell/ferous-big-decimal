@@ -33,6 +33,15 @@ pipeline {
                 sh 'cargo doc --workspace --document-private-items'
             }
         }
+
+        stage('Create Artifacts') {
+            steps {
+                sh 'tar -cvzf ferrous-big-decimal-${env.BUILD_NUMBER}.tar.gz ./src/ Cargo.toml LICENSE README.md'
+                sh 'tar -cvzf ferrous-big-gecimal-docs-${env.BUILD_NUMBER}.tar.gz -C ./target/doc ./'
+                archiveArtifacts artifacts: 'ferrous-big-decimal-${env.BUILD_NUMBER}.tar.gz', fingerprint: true
+                archiveArtifacts artifacts: 'ferrous-big-decimal-docs-${env.BUILD_NUMBER}.tar.gz', fingerprint: true
+            }
+        }
     }
     post {
         success {
