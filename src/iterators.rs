@@ -15,15 +15,15 @@ enum Smaller {
     Niether,
 }
 
-pub struct IntegersAscending<'a> {
+pub struct IntegersByAscendingPower<'a> {
     first: &'a Vec<Digits>,
     second: &'a Vec<Digits>,
     current_power: usize,
     smaller: Smaller,
 }
 
-impl<'a> IntegersAscending<'a> {
-    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> IntegersAscending<'a> {
+impl<'a> IntegersByAscendingPower<'a> {
+    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> IntegersByAscendingPower<'a> {
         let mut smaller: Smaller = Smaller::Niether;
         if first.len() < second.len() {
             smaller = Smaller::First;
@@ -31,7 +31,7 @@ impl<'a> IntegersAscending<'a> {
         if first.len() > second.len() {
             smaller = Smaller::Second;
         }
-        return IntegersAscending {
+        return IntegersByAscendingPower {
             first,
             second,
             current_power: 0,
@@ -40,7 +40,7 @@ impl<'a> IntegersAscending<'a> {
     }
 }
 
-impl<'a> Iterator for IntegersAscending<'a> {
+impl<'a> Iterator for IntegersByAscendingPower<'a> {
     type Item = (Digits, Digits);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -112,7 +112,7 @@ impl<'a> Iterator for IntegersAscending<'a> {
     }
 }
 
-pub struct IntegersDescending<'a> {
+pub struct IntegersByDescendingPower<'a> {
     first: std::slice::Iter<'a, Digits>,
     second: std::slice::Iter<'a, Digits>,
     current_power: usize,
@@ -120,8 +120,8 @@ pub struct IntegersDescending<'a> {
     smallers_length: usize,
 }
 
-impl<'a> IntegersDescending<'a> {
-    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> IntegersDescending<'a> {
+impl<'a> IntegersByDescendingPower<'a> {
+    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> IntegersByDescendingPower<'a> {
         let mut smaller: Smaller = Smaller::Niether;
         if first.len() < second.len() {
             smaller = Smaller::First;
@@ -129,7 +129,7 @@ impl<'a> IntegersDescending<'a> {
         if first.len() > second.len() {
             smaller = Smaller::Second;
         }
-        return IntegersDescending {
+        return IntegersByDescendingPower {
             first: first.iter(),
             second: second.iter(),
             current_power: max(first.len(), second.len()),
@@ -139,7 +139,7 @@ impl<'a> IntegersDescending<'a> {
     }
 }
 
-impl<'a> Iterator for IntegersDescending<'a> {
+impl<'a> Iterator for IntegersByDescendingPower<'a> {
     type Item = (Digits, Digits);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -203,15 +203,15 @@ impl<'a> Iterator for IntegersDescending<'a> {
     }
 }
 
-pub struct DecimalsAscending<'a> {
+pub struct DecimalsByAscendingPower<'a> {
     first: &'a Vec<Digits>,
     second: &'a Vec<Digits>,
     current_power: usize,
     smaller: Smaller,
 }
 
-impl<'a> DecimalsAscending<'a> {
-    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> DecimalsAscending<'a> {
+impl<'a> DecimalsByAscendingPower<'a> {
+    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> DecimalsByAscendingPower<'a> {
         let mut smaller = Smaller::Niether;
         if first.len() < second.len() {
             smaller = Smaller::First;
@@ -219,7 +219,7 @@ impl<'a> DecimalsAscending<'a> {
         if first.len() > second.len() {
             smaller = Smaller::Second;
         }
-        return DecimalsAscending {
+        return DecimalsByAscendingPower {
             first,
             second,
             current_power: 0,
@@ -228,7 +228,7 @@ impl<'a> DecimalsAscending<'a> {
     }
 }
 
-impl<'a> Iterator for DecimalsAscending<'a> {
+impl<'a> Iterator for DecimalsByAscendingPower<'a> {
     type Item = (Digits, Digits);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -302,21 +302,21 @@ impl<'a> Iterator for DecimalsAscending<'a> {
     }
 }
 
-pub struct DecimalsDescending<'a> {
+pub struct DecimalsByDescendingPower<'a> {
     first: std::slice::Iter<'a, Digits>,
     second: std::slice::Iter<'a, Digits>,
 }
 
-impl<'a> DecimalsDescending<'a> {
-    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> DecimalsDescending<'a> {
-        return DecimalsDescending {
+impl<'a> DecimalsByDescendingPower<'a> {
+    pub fn new(first: &'a Vec<Digits>, second: &'a Vec<Digits>) -> DecimalsByDescendingPower<'a> {
+        return DecimalsByDescendingPower {
             first: first.iter(),
             second: second.iter(),
         };
     }
 }
 
-impl<'a> Iterator for DecimalsDescending<'a> {
+impl<'a> Iterator for DecimalsByDescendingPower<'a> {
     type Item = (Digits, Digits);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -370,7 +370,7 @@ mod test {
         ];
         for (first, second, results) in test_data {
             let mut counter: usize = 0;
-            let mut da: DecimalsAscending = DecimalsAscending::new(&first, &second);
+            let mut da: DecimalsByAscendingPower = DecimalsByAscendingPower::new(&first, &second);
             while counter < results.len() {
                 assert_eq!(da.next(), results[counter]);
                 counter += 1;
@@ -412,7 +412,7 @@ mod test {
         ];
         for (first, second, results) in test_data {
             let mut counter: usize = 0;
-            let mut da: IntegersAscending = IntegersAscending::new(&first, &second);
+            let mut da: IntegersByAscendingPower = IntegersByAscendingPower::new(&first, &second);
             while counter < results.len() {
                 assert_eq!(da.next(), results[counter]);
                 counter += 1;
