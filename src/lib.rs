@@ -10,6 +10,7 @@ use std::fmt::Formatter;
 use std::ops::Add;
 use std::ops::Not;
 use std::ops::Sub;
+use std::str::FromStr;
 
 // Internal module declarations and imports.
 mod digits;
@@ -22,6 +23,7 @@ use iterators::IntegersByAscendingPower;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum MathErrors {
     DivisionByZero,
+    ParseError,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -196,6 +198,14 @@ impl From<u128> for BigNumber {
             decimal: Vec::new(),
             sign: Sign::Positive,
         };
+    }
+}
+
+impl FromStr for BigNumber {
+    type Err = MathErrors;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        todo!();
     }
 }
 

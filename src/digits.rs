@@ -1,4 +1,8 @@
 #![warn(dead_code)]
+// External Imports
+use std::str::FromStr;
+
+// Internal imports
 use super::MathErrors;
 
 #[derive(Clone, Copy, Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
@@ -19,6 +23,14 @@ pub enum Digits {
 impl Default for &Digits {
     fn default() -> Self {
         return &Digits::Zero;
+    }
+}
+
+impl FromStr for Digits {
+    type Err = MathErrors;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        todo!();
     }
 }
 
