@@ -26,11 +26,21 @@ impl Default for &Digits {
     }
 }
 
-impl FromStr for Digits {
-    type Err = MathErrors;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!();
+impl From<char> for Digits {
+    fn from(input: char) -> Self {
+        match input {
+            '0' => Digits::Zero,
+            '1' => Digits::One,
+            '2' => Digits::Two,
+            '3' => Digits::Three,
+            '4' => Digits::Four,
+            '5' => Digits::Five,
+            '6' => Digits::Six,
+            '7' => Digits::Seven,
+            '8' => Digits::Eight,
+            '9' => Digits::Nine,
+            _ => Digits::Zero,
+        }
     }
 }
 

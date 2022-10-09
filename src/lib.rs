@@ -2,6 +2,8 @@
 #![allow(dead_code)]
 
 // External imports
+use lazy_static::lazy_static;
+use regex::Regex;
 use std::cmp;
 use std::cmp::Ordering;
 use std::fmt;
@@ -31,6 +33,15 @@ enum Sign {
     Negative,
     #[default]
     Positive,
+}
+
+impl Sign {
+    fn is_negative(self) -> bool {
+        return self == Sign::Negative;
+    }
+    fn is_positive(self) -> bool {
+        return self == Sign::Positive;
+    }
 }
 
 impl Not for Sign {
@@ -205,7 +216,57 @@ impl FromStr for BigNumber {
     type Err = MathErrors;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        todo!();
+        lazy_static! {
+            // the (|\.\d+) requires any s to have either an integer portion
+            // or an integer and a decimal portion.
+            static ref RE: Regex = Regex::new(r"^-?\d+(|\.\d+)$").unwrap();
+        }
+        if !RE.is_match(s) {
+            return Err(MathErrors::ParseError);
+        }
+
+        let result_sign: Sign;
+        if s.starts_with('-') {
+            result_sign = Sign::Negative;
+        } else {
+            result_sign = Sign::Positive;
+        }
+
+        let mut result_integer: Vec<Digits> = Vec::with_capacity(s.len());
+        let mut result_decimal: Vec<Digits> = Vec::with_capacity(s.len());
+        match s.find('.') {
+            None => {
+                if result_sign.is_negative() {
+                    for character in s[1..].chars() {
+                        result_integer.push(Digits::from(character));
+                    }
+                } else {
+                    for character in s.chars() {
+                        result_integer.push(Digits::from(character));
+                    }
+                }
+            }
+            Some(periods_location) => {
+                if result_sign.is_negative() {
+                    for character in s[1..periods_location].chars() {
+                        result_integer.push(Digits::from(character));
+                    }
+                } else {
+                    for character in s[0..periods_location].chars() {
+                        result_integer.push(Digits::from(character));
+                    }
+                }
+                for character in s[(periods_location + 1)..].chars() {
+                    result_decimal.push(Digits::from(character));
+                }
+            }
+        }
+
+        return Ok(BigNumber {
+            integer: result_integer,
+            decimal: result_decimal,
+            sign: result_sign,
+        });
     }
 }
 
@@ -572,6 +633,67 @@ mod test {
         ];
         for ((left, right), expected) in test_data {
             assert_eq!(left.add(right), expected);
+        }
+    }
+
+    #[test]
+    fn test_big_number_validation_regex() {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"^-?\d+(|\.\d+)$").unwrap();
+        }
+        let test_data = [
+            (("0", true)),
+            (("-0", true)),
+            (("--0", false)),
+            (("0.00", true)),
+            ((" 1923.8855 ", false)),
+            (("147.58374", true)),
+            (("-.98", false)),
+            (("0.", false)),
+        ];
+        for (example, expected) in test_data {
+            assert_eq!(RE.is_match(example), expected);
+        }
+    }
+
+    #[test]
+    fn test_big_number_from_str() {
+        let test_data = [
+            (
+                BigNumber::from_str("7.0").unwrap(),
+                BigNumber {
+                    integer: vec![Digits::Seven],
+                    decimal: vec![Digits::Zero],
+                    sign: Sign::Positive,
+                },
+            ),
+            (
+                BigNumber::from_str("-8.004").unwrap(),
+                BigNumber {
+                    integer: vec![Digits::Eight],
+                    decimal: vec![Digits::Zero, Digits::Zero, Digits::Four],
+                    sign: Sign::Negative,
+                },
+            ),
+            (
+                BigNumber::from_str("-11").unwrap(),
+                BigNumber {
+                    integer: vec![Digits::One, Digits::One],
+                    decimal: Vec::new(),
+                    sign: Sign::Negative,
+                },
+            ),
+            (
+                BigNumber::from_str("30").unwrap(),
+                BigNumber {
+                    integer: vec![Digits::Three, Digits::Zero],
+                    decimal: Vec::new(),
+                    sign: Sign::Positive,
+                },
+            ),
+        ];
+        for (example, expected) in test_data {
+            assert_eq!(example, expected);
         }
     }
 }
